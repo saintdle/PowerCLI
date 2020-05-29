@@ -85,8 +85,8 @@ Write-Host "Creating vCenter role $CNSVM" -ForegroundColor Green
 
 # Create CNS-SEARCH-AND-SPBM role
 $CNSSearchAndSPBMPrivilege = @(
-    'VirtualMachine.Config.AddExistingDisk',
-    'VirtualMachine.Config.AddRemoveDevice'
+    'Cns.Searchable',
+    'StorageProfile.View',
     'System.Anonymous',
     'System.Read',
     'System.View',
