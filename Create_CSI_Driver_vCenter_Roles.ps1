@@ -1,4 +1,4 @@
-<#
+ <#
 .SYNOPSIS
     Create-CNS-Roles.ps1 - PowerShell Script to create a new vCenter Roles algined with the prereqs for the Kubernetes vSphere CSI Driver. 
 .DESCRIPTION
@@ -57,9 +57,9 @@ $CNSDatastorePrivilege = @(
     'Datastore.FileManagement',
     'System.Anonymous',
     'System.Read',
-    'System.View',
+    'System.View'
 )
-$CNSDatastoreRole = New-VIRole -Name 'CNS-DATASTORE' -Priviledge (Get-VIPrivilege -Id $CNSDatastorePrivilege) | Out-Null
+$CNSDatastoreRole = New-VIRole -Name 'CNS-DATASTORE' -Privilege (Get-VIPrivilege -Id $CNSDatastorePrivilege) | Out-Null
 Write-Host "Creating vCenter role $CNSDatastoreRolee" -ForegroundColor Green
 
 # Create CNS-HOST-CONFIG-STORAGE role
@@ -67,9 +67,9 @@ $CNSHostConfigStoragePrivilege = @(
     'Host.Config.Storage',
     'System.Anonymous',
     'System.Read',
-    'System.View',
+    'System.View'
 )
-$CNSHostConfigStorage = New-VIRole -Name 'CNS-HOST-CONFIG-STORAGE' -Priviledge (Get-VIPrivilege -Id $CNSHostConfigStoragePrivilege) | Out-Null
+$CNSHostConfigStorage = New-VIRole -Name 'CNS-HOST-CONFIG-STORAGE' -Privilege (Get-VIPrivilege -Id $CNSHostConfigStoragePrivilege) | Out-Null
 Write-Host "Creating vCenter role $CNSHostConfigStorage" -ForegroundColor Green
 
 # Create CNS-VM role
@@ -78,23 +78,24 @@ $CNSVMPrivilege = @(
     'VirtualMachine.Config.AddRemoveDevice'
     'System.Anonymous',
     'System.Read',
-    'System.View',
+    'System.View'
 )
-$CNSVM = New-VIRole -Name 'CNS-VM' -Priviledge (Get-VIPrivilege -Id $CNSVMPrivilege) | Out-Null
+$CNSVM = New-VIRole -Name 'CNS-VM' -Privilege (Get-VIPrivilege -Id $CNSVMPrivilege) | Out-Null
 Write-Host "Creating vCenter role $CNSVM" -ForegroundColor Green
 
 # Create CNS-SEARCH-AND-SPBM role
 $CNSSearchAndSPBMPrivilege = @(
-    'Cns.Searchable',
-    'StorageProfile.View',
+    'VirtualMachine.Config.AddExistingDisk',
+    'VirtualMachine.Config.AddRemoveDevice'
     'System.Anonymous',
     'System.Read',
-    'System.View',
+    'System.View'
 )
-$CNSSearchAndSPBM = New-VIRole -Name 'CNS-SEARCH-AND-SPBM' -Priviledge (Get-VIPrivilege -Id $CNSSearchAndSPBMPrivilege) | Out-Null
+$CNSSearchAndSPBM = New-VIRole -Name 'CNS-SEARCH-AND-SPBM' -Privilege (Get-VIPrivilege -Id $CNSSearchAndSPBMPrivilege) | Out-Null
 Write-Host "Creating vCenter role $CNSSearchAndSPBM" -ForegroundColor Green
 
 
 # Disconnecting from the vCenter Server
 Disconnect-VIServer -Confirm:$false
 Write-Host "Disconnected from your vCenter Server $vCenterServer" -ForegroundColor Green
+ 
