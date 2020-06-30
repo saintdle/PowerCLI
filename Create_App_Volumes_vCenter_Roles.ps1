@@ -1,6 +1,6 @@
  <#
 .SYNOPSIS
-    Create-CNS-Roles.ps1 - PowerShell Script to create a new vCenter Roles algined with the prereqs for App Volumes. 
+    Create_App_Volumes_vCenter_Roles.ps1 - PowerShell Script to create a new vCenter Roles algined with the prereqs for App Volumes. 
 .DESCRIPTION
     This script is used to create a new roles on your vCenter server for App Volumes 2.x, 3.x and 4.x
     The newly created role will be filled with the needed permissions for App Volumes
