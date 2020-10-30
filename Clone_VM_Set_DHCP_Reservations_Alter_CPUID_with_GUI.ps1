@@ -360,5 +360,16 @@ $consolePtr = [Console.Window]::GetConsoleWindow()
 [Console.Window]::ShowWindow($consolePtr, 0)
  
 #Build form based on earlier configuration
+$form = New-Object System.Windows.Forms.Form
+$listBoxVMs = New-Object System.Windows.Forms.ListBox
+$listBoxDS = New-Object System.Windows.Forms.ListBox
+$listBoxHost = New-Object System.Windows.Forms.ListBox
+$newNameTextBox = New-Object System.Windows.Forms.TextBox
+$VMIPAddrTextBox = New-Object System.Windows.Forms.TextBox
+$DHCPScopeBox  = New-Object System.Windows.Forms.ListBox
+$DRVMIPAddrTextBox = New-Object System.Windows.Forms.TextBox
+$DRDHCPScopeBox  = New-Object System.Windows.Forms.ListBox
+$DBVMIPAddrTextBox = New-Object System.Windows.Forms.TextBox
+$DRDBVMIPAddrTextBox = New-Object System.Windows.Forms.TextBox
  
 PickVcenter
