@@ -3,7 +3,7 @@
     Create_vCenter_OpenShift_Install_Role.ps1 - PowerShell Script to create a new vCenter Roles algined with the prereqs for the OpenShift Container Platform Install. 
 .DESCRIPTION
     This script is used to create a new roles on your vCenter server.
-    The newly created role will be filled with the needed permissions for installing OpenShift Container Platform using the UPI Method.
+    The newly created role will be filled with the needed permissions for installing OpenShift Container Platform using the IPI Method.
     The permissions are based on the documentation found here: https://docs.openshift.com/container-platform/4.6/installing/installing_vsphere/installing-vsphere-installer-provisioned.html#installation-vsphere-installer-infra-requirements_installing-vsphere-installer-provisioned
 .OUTPUTS
     Results are printed to the console.
