@@ -53,7 +53,6 @@ Write-Host "Connected to your vCenter server $vCenterServer" -ForegroundColor Gr
 
 # Create CNS-DATASTORE role
 $CNSDatastorePrivilege = @(
-    'Cns.Searchable',
     'Datastore.FileManagement',
     'System.Anonymous',
     'System.Read',
@@ -85,8 +84,8 @@ Write-Host "Creating vCenter role $CNSVM" -ForegroundColor Green
 
 # Create CNS-SEARCH-AND-SPBM role
 $CNSSearchAndSPBMPrivilege = @(
-    'VirtualMachine.Config.AddExistingDisk',
-    'VirtualMachine.Config.AddRemoveDevice'
+    'Cns.Searchable',
+    'StorageProfile.View'
     'System.Anonymous',
     'System.Read',
     'System.View'
