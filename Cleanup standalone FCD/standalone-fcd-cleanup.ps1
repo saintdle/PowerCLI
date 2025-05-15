@@ -3,14 +3,14 @@
     Enterprise-grade cleanup tool for standalone First Class Disks (FCDs) not managed by CNS in vSphere.
 
 .DESCRIPTION
-    - Safely identifies and optionally deletes orphaned FCDs.
-    - Handles multiple vCenter sessions and connections.
-    - Full logging and reporting.
-    - Supports parallel deletion (PowerShell 7+).
-    - Dry-run enabled by default.
+    - Identifies and optionally deletes orphaned FCDs (FCDs not managed by CNS).
+    - Handles multiple or existing vCenter sessions.
+    - Logs all actions and creates CSV report.
+    - Runs in single session for stability (no parallelism).
+    - Dry-run enabled by default for safety.
 
 .VERSION
-    2.0 - Final version with parallel deletion, logging, vCenter session handling, duration tracking.
+    5.0 - Production safe version with serial deletion, session-safe, fully annotated.
 
 .AUTHOR
     Dean Lewis (@saintdle) | https://bsky.app/profile/saintdle.bsky.social
@@ -20,35 +20,13 @@
 
 .LICENSE
     MIT License
-
-    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
-    documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
-    the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, 
-    and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-    The above copyright notice and this permission notice shall be included in all copies or substantial portions 
-    of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED 
-    TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
-    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION 
-    OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
-    DEALINGS IN THE SOFTWARE.
-
-.NOTES
-    This script requires:
-    - VMware PowerCLI module
-    - PowerShell 7+ for parallel deletion (Linux pwsh or Windows PS7 Core)
 #>
 
 param (
-    [switch]$AutoDelete,                  # Optional: Automatically delete without confirmation
-    [switch]$DryRun = $true               # Optional: Dry run mode ON by default for safety
+    [switch]$AutoDelete,            
+    [switch]$DryRun = $true         
 )
 
-# ---------------------
-# Helper function to write to log file and console
-# ---------------------
 function Write-Log {
     param (
         [string]$Message,
@@ -60,83 +38,71 @@ function Write-Log {
     Write-Host $logEntry
 }
 
-# ---------------------
-# Select existing vCenter session or prompt for new
-# ---------------------
 function Select-vCenterSession {
+    if ($null -ne $global:defaultviserver -and $global:defaultviserver.IsConnected) {
+        Write-Host "`nExisting vCenter session found: $($global:defaultviserver.Name)" -ForegroundColor Cyan
+        $useDefault = Read-Host "Use this session? Type YES to proceed, NO to select or connect"
+        if ($useDefault -eq "YES") {
+            return $global:defaultviserver
+        }
+    }
+
     $sessions = Get-VIServer
     if ($sessions.Count -eq 0) {
         Write-Host "No active vCenter connections found." -ForegroundColor Yellow
         return $null
     }
 
-    Write-Host "`nActive vCenter connections:" -ForegroundColor Cyan
-    $sessions | ForEach-Object -Begin { $i = 1 } -Process {
-        Write-Host "$i) $($_.Name) [$($_.User)]"
+    Write-Host "`nActive sessions:" -ForegroundColor Cyan
+    $i = 1
+    foreach ($session in $sessions) {
+        Write-Host "$i) $($session.Name) [$($session.User)]"
         $i++
     }
 
     if ($sessions.Count -eq 1) {
-        $useExisting = Read-Host "Use connected vCenter $($sessions[0].Name)? Type YES to use, or NO to connect to another"
+        $useExisting = Read-Host "Use $($sessions[0].Name)? Type YES to proceed"
         if ($useExisting -eq "YES") { return $sessions[0] }
     } else {
-        $choice = Read-Host "Enter the number of the vCenter to use, or 0 to connect to another"
-        if ($choice -ne "0") {
+        $choice = Read-Host "Enter session number, or 0 to connect manually"
+        if ($choice -ne "0" -and $choice -match '^\d+$') {
             return $sessions[$choice - 1]
         }
     }
     return $null
 }
 
-# ---------------------
-# Prompt user to connect to a new vCenter
-# ---------------------
 function Connect-NewvCenter {
-    $vCenter = Read-Host -Prompt "Enter vCenter Server FQDN/IP"
+    $vCenter = Read-Host -Prompt "Enter vCenter FQDN/IP"
     Connect-VIServer -Server $vCenter -ErrorAction Stop
 }
 
-# ---------------------
-# Main function to clean up orphaned FCDs
-# ---------------------
 function Cleanup-StandaloneFCDs {
-    $scriptStart = Get-Date   # Start timer for duration reporting
+    $scriptStart = Get-Date
 
     try {
-        # -------------------------
-        # Script header
-        # -------------------------
-        Write-Host "==============================" -ForegroundColor Cyan
-        Write-Host "   vSphere Standalone FCD Cleanup Tool (Enterprise Edition)" -ForegroundColor Cyan
-        Write-Host "==============================" -ForegroundColor Cyan
+        Write-Host "==========================================" -ForegroundColor Cyan
+        Write-Host "   vSphere Standalone FCD Cleanup Tool v5" -ForegroundColor Cyan
+        Write-Host "==========================================" -ForegroundColor Cyan
 
-        # -------------------------
-        # Connect to vCenter
-        # -------------------------
         $session = Select-vCenterSession
         if (-not $session) {
             $session = Connect-NewvCenter
         }
 
+        Import-Module VMware.VimAutomation.Storage -ErrorAction Stop
+
         $vCenterName = $session.Name
         $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
-        $global:LogFile = ".\FCD-Cleanup-$($vCenterName)-$timestamp.log"
-        $reportFile = ".\StandaloneFCDs-$($vCenterName)-$timestamp.csv"
+        $global:LogFile = ".\\FCD-Cleanup-$($vCenterName)-$timestamp.log"
+        $reportFile = ".\\StandaloneFCDs-$($vCenterName)-$timestamp.csv"
 
-        # -------------------------
-        # Initial log section
-        # -------------------------
-        Write-Log "=============================="
-        Write-Log " Starting vSphere Standalone FCD Cleanup"
-        Write-Log " Connected to vCenter: $vCenterName"
+        Write-Log "=========================================="
+        Write-Log " Connected to: $vCenterName"
         Write-Log " DryRun: $DryRun"
         Write-Log " AutoDelete: $AutoDelete"
-        Write-Log " LogFile: $global:LogFile"
-        Write-Log "=============================="
+        Write-Log "=========================================="
 
-        # -------------------------
-        # Identify standalone FCDs
-        # -------------------------
         Write-Log "Retrieving all FCDs..."
         $allFCDs = Get-VDisk
 
@@ -146,69 +112,52 @@ function Cleanup-StandaloneFCDs {
 
         $orphanedFCDs = $allFCDs | Where-Object { $cnsBackingIds -notcontains $_.Id }
 
-        # -------------------------
-        # Results
-        # -------------------------
         if ($orphanedFCDs.Count -eq 0) {
             Write-Log "No standalone FCDs found." "SUCCESS"
         } else {
-            Write-Log "Found $($orphanedFCDs.Count) standalone FCD(s)." "WARNING"
+            Write-Log "Found $($orphanedFCDs.Count) orphaned FCD(s)." "WARNING"
             $orphanedFCDs | Select-Object Name, Id, CapacityGB, Datastore, CreatedTime |
                 Export-Csv -Path $reportFile -NoTypeInformation
-            Write-Log "Standalone FCD report exported: $reportFile"
+            Write-Log "Exported report: $reportFile"
 
-            # -------------------------
-            # Confirm before deletion (unless AutoDelete)
-            # -------------------------
             if ($DryRun) {
-                Write-Log "Dry run mode enabled. Skipping deletion." "INFO"
+                Write-Log "Dry run mode ON. No deletions will occur." "INFO"
             } elseif (-not $AutoDelete) {
-                $confirm = Read-Host "Do you want to delete these FCDs? Type YES to proceed"
+                $confirm = Read-Host "Delete these orphaned FCDs? Type YES to proceed"
                 if ($confirm -ne "YES") {
-                    Write-Log "User declined deletion. Exiting." "INFO"
+                    Write-Log "User cancelled deletion step." "INFO"
                     return
                 }
             }
 
-            # -------------------------
-            # Parallel deletion (only if DryRun is off)
-            # -------------------------
             if (-not $DryRun) {
-                Write-Log "Starting parallel deletion of FCDs..." "INFO"
-                $orphanedFCDs | ForEach-Object -Parallel {
-                    param($fcd)
+                Write-Log "Starting serial deletion..." "INFO"
+                $count = 0
+                foreach ($fcd in $orphanedFCDs) {
+                    $count++
                     try {
-                        Remove-VDisk -Id $fcd.Id -Confirm:$false -ErrorAction Stop
-                        "$($fcd.Name) [$($fcd.Id)] successfully deleted." 
+                        $fcd | Remove-VDisk -Confirm:$false -ErrorAction Stop
+                        Write-Log "Deleted: $($fcd.Name) [$($fcd.Id)]" "SUCCESS"
                     } catch {
-                        "Failed to delete $($fcd.Name) [$($fcd.Id)] - $_"
+                        Write-Log "Failed to delete $($fcd.Name) [$($fcd.Id)] - $_" "ERROR"
                     }
-                } -ThrottleLimit 5 -ArgumentList ($_)
+                }
                 Write-Log "All deletions attempted." "SUCCESS"
             }
         }
 
-        # -------------------------
-        # Report duration
-        # -------------------------
         $duration = (Get-Date) - $scriptStart
-        Write-Log "=============================="
-        Write-Log " Script completed in $($duration.TotalMinutes.ToString("0.00")) minutes."
-        Write-Log "=============================="
+        Write-Log "=========================================="
+        Write-Log " Completed in $($duration.TotalMinutes.ToString("0.00")) minutes."
+        Write-Log "=========================================="
     } catch {
-        Write-Log "Fatal error occurred: $_" "ERROR"
+        Write-Log "Fatal error: $_" "ERROR"
     } finally {
-        # -------------------------
-        # Disconnect vCenter sessions
-        # -------------------------
         if (Get-VIServer) {
             Disconnect-VIServer -Server * -Confirm:$false
-            Write-Log "Disconnected from vCenter(s)." "INFO"
+            Write-Log "Disconnected from vCenter." "INFO"
         }
     }
 }
 
-# ---------------------
-# Execute script
-# ---------------------
 Cleanup-StandaloneFCDs
