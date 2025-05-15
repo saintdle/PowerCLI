@@ -3,6 +3,7 @@
 A PowerShell / PowerCLI tool to safely identify and optionally delete standalone First Class Disks (FCDs) in VMware vSphere that are not associated with any Container Native Storage (CNS) volumes.
 
 This version includes advanced features like:
+- Auto-detect and use existing vCenter sessions
 - Multi-vCenter session handling
 - Dry-run mode (default, safe)
 - Parallel deletion for large-scale environments (PowerShell 7+)
@@ -24,22 +25,22 @@ This version includes advanced features like:
 
 ```powershell
 # Dry run (default, safe mode)
-.\standalone-fcd-cleanup.ps1
+.\standalone-fcd-cleanup-v2.ps1
 
 # Delete orphaned FCDs (with confirmation prompt)
-.\standalone-fcd-cleanup.ps1 -DryRun:$false
+.\standalone-fcd-cleanup-v2.ps1 -DryRun:$false
 
 # Automatically delete orphaned FCDs without prompt (USE EXTREME CAUTION)
-.\standalone-fcd-cleanup.ps1 -DryRun:$false -AutoDelete
+.\standalone-fcd-cleanup-v2.ps1 -DryRun:$false -AutoDelete
 ```
 
 The script will:
-1. Check for existing active vCenter connections.
-2. Allow you to select an existing connection, or connect to a new vCenter.
-3. Scan for orphaned standalone FCDs not associated with CNS.
-4. Export a full CSV report of findings.
-5. Optionally delete orphaned FCDs after confirmation.
-
+1. Check for existing `$global:defaultviserver` connections and offer to reuse it.
+2. If no default, list all active vCenter sessions and allow selection.
+3. Otherwise, prompt for new vCenter connection.
+4. Scan for orphaned standalone FCDs not associated with CNS.
+5. Export a full CSV report of findings.
+6. Optionally delete orphaned FCDs after confirmation.
 ---
 
 ## ⚠️ Important Safety Notice
