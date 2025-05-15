@@ -25,13 +25,13 @@ This version includes advanced features like:
 
 ```powershell
 # Dry run (default, safe mode)
-.\standalone-fcd-cleanup-v2.ps1
+.\standalone-fcd-cleanup.ps1
 
 # Delete orphaned FCDs (with confirmation prompt)
-.\standalone-fcd-cleanup-v2.ps1 -DryRun:$false
+.\standalone-fcd-cleanup.ps1 -DryRun:$false
 
 # Automatically delete orphaned FCDs without prompt (USE EXTREME CAUTION)
-.\standalone-fcd-cleanup-v2.ps1 -DryRun:$false -AutoDelete
+.\standalone-fcd-cleanup.ps1 -DryRun:$false -AutoDelete
 ```
 
 The script will:
