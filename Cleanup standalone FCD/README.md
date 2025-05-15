@@ -67,7 +67,7 @@ Author: [Dean Lewis](https://bsky.app/profile/saintdle.bsky.social)
 GitHub: [https://github.com/saintdle/PowerCLI](https://github.com/saintdle/PowerCLI)
 
 Licensed under the MIT License.  
-See [`LICENSE`](LICENSE) file for full license text.
+See [`LICENSE`](../LICENSE) file for full license text.
 
 ---
 
